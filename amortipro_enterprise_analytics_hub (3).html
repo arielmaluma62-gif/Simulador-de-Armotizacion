@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="es" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AmortiPRO v3.0 - Enterprise Analytics Hub</title>
+    
+    <!-- Tailwind CSS para diseño utilitario moderno -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js para visualización de curvas dinámicas -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons para iconografía vectorizada limpia -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f5f3ff',
+                            100: '#ede9fe',
+                            200: '#ddd6fe',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                            900: '#312e81',
+                            950: '#1e1b4b',
+                        },
+                        amberbrand: {
+                            50: '#fffbeb',
+                            100: '#fef3c7',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                            700: '#b45309',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Deslizador de rango corporativo estilizado */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-runnable-track {
+            background: #e2e8f0;
+            height: 6px;
+            border-radius: 9999px;
+        }
+        .dark input[type="range"]::-webkit-slider-runnable-track {
+            background: #334155;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            margin-top: -5px;
+            background-color: #6366f1;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3);
+            transition: transform 0.15s ease, background-color 0.15s ease;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.25);
+            background-color: #4f46e5;
+        }
+
+        /* Ocultar barra de desplazamiento manteniendo funcionalidad nativa */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        .tab-active {
+            border-bottom-color: #4f46e5;
+            color: #4f46e5;
+        }
+        .dark .tab-active {
+            border-bottom-color: #818cf8;
+            color: #818cf8;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col justify-between selection:bg-brand-200 selection:text-brand-900 transition-colors duration-300">
+
+    <header class="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center space-x-3.5">
+                <div class="bg-gradient-to-tr from-brand-600 to-indigo-500 text-white p-2.5 rounded-2xl shadow-xl shadow-brand-500/20">
+                    <i data-lucide="line-chart" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+                        AmortiPRO <span class="text-xs bg-brand-100 dark:bg-brand-950/80 text-brand-700 dark:text-brand-300 px-2.5 py-0.5 rounded-full font-bold">v3.0 Ultra</span>
+                    </h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 font-semibold tracking-wide">Enterprise Analytics Hub</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <!-- Selector de Presets Rápidos -->
+                <div class="hidden lg:flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
+                    <span class="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 px-2 uppercase tracking-widest">Presets:</span>
+                    <button onclick="cargarPreset('auto')" class="text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 shadow-sm transition">🚗 Vehículo</button>
+                    <button onclick="cargarPreset('hipoteca')" class="text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 shadow-sm transition">🏠 Hipoteca</button>
+                    <button onclick="cargarPreset('maquinaria')" class="text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 shadow-sm transition">⚙️ Industrial</button>
+                </div>
+
+                <!-- Botón de Modo Oscuro -->
+                <button onclick="toggleDarkMode()" class="p-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl transition-all duration-200">
+                    <i id="themeIcon" data-lucide="moon" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Notificación Toast de Validación -->
+    <div id="toastContainer" class="fixed top-24 right-6 z-50 hidden transition-all duration-300 transform translate-y-0">
+        <div class="bg-rose-50 dark:bg-rose-950/90 border border-rose-200 dark:border-rose-900/50 text-rose-800 dark:text-rose-200 px-5 py-4 rounded-2xl shadow-2xl flex items-center gap-3 max-w-md backdrop-blur-md">
+            <i data-lucide="alert-triangle" class="w-5 h-5 text-rose-600 dark:text-rose-400 flex-shrink-0"></i>
+            <div>
+                <p class="font-bold text-sm">Validación del Sistema</p>
+                <p class="text-xs text-rose-700 dark:text-rose-300" id="toastMessage">Por favor revise los campos.</p>
+            </div>
+            <button onclick="hideToast()" class="ml-auto text-rose-400 hover:text-rose-700 dark:hover:text-rose-200">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </div>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-grow">
+        
+        <!-- Segmentación Estratégica: Pasivos vs Activos -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <!-- Selección Pasivo (Deuda) -->
+            <button id="btnSelectPrestamo" onclick="switchNaturaleza('prestamo')" class="group relative text-left p-6 rounded-3xl border-2 transition-all duration-300 bg-white dark:bg-slate-900 hover:border-brand-500 border-brand-600 dark:border-brand-500 shadow-xl shadow-brand-500/5">
+                <div class="absolute top-5 right-5 text-brand-600 dark:text-brand-400 animate-pulse" id="checkPrestamo">
+                    <i data-lucide="check-circle-2" class="w-6 h-6"></i>
+                </div>
+                <div class="flex items-center space-x-4 mb-4">
+                    <div class="bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-400 p-3.5 rounded-2xl group-hover:scale-105 transition-transform duration-200">
+                        <i data-lucide="landmark" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-extrabold text-slate-900 dark:text-white">Obligaciones y Créditos</h3>
+                        <p class="text-xs text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider">Pasivos Financieros</p>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Simula estructuras de amortización bancaria avanzadas. Admite amortización anticipada (abonos extraordinarios) y periodos de gracia parciales o totales.</p>
+            </button>
+
+            <!-- Selección Activo (Bienes) -->
+            <button id="btnSelectActivo" onclick="switchNaturaleza('activo')" class="group relative text-left p-6 rounded-3xl border-2 transition-all duration-300 bg-white dark:bg-slate-900 hover:border-amber-500 border-slate-200 dark:border-slate-800/80 hover:shadow-xl">
+                <div class="absolute top-5 right-5 text-amber-500 hidden" id="checkActivo">
+                    <i data-lucide="check-circle-2" class="w-6 h-6"></i>
+                </div>
+                <div class="flex items-center space-x-4 mb-4">
+                    <div class="bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400 p-3.5 rounded-2xl group-hover:scale-105 transition-transform duration-200">
+                        <i data-lucide="package" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-extrabold text-slate-900 dark:text-white">Depreciación de Bienes</h3>
+                        <p class="text-xs text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider">Activos Corporativos</p>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Calcula la devaluación fiscal y contable de activos productivos bajo estándares internacionales (NIIF/IFRS). Estima el ahorro mediante escudo impositivo.</p>
+            </button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            <!-- Panel Izquierdo: Configuración de Parámetros (Col 4) -->
+            <div class="lg:col-span-4 space-y-6">
+                <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-xl border border-slate-200/60 dark:border-slate-800">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                            <i data-lucide="sliders-horizontal" class="w-5 h-5 text-brand-600"></i> Parámetros de Simulación
+                        </h2>
+                        <span class="text-[10px] font-extrabold px-2.5 py-1 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-md uppercase tracking-wider">Editables</span>
+                    </div>
+
+                    <!-- Métodos de Cálculo Dinámicos -->
+                    <div class="mb-5">
+                        <label class="block text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Estructura del Método</label>
+                        <select id="metodoSeleccionado" onchange="actualizarMetodoExplicativo()" class="w-full bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 text-sm font-semibold px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-brand-500 outline-none transition cursor-pointer">
+                            <!-- Inyectado dinámicamente -->
+                        </select>
+                    </div>
+
+                    <!-- Inputs Dinámicos -->
+                    <div class="space-y-4" id="inputContainer">
+                        <!-- Reconstruido en tiempo de ejecución -->
+                    </div>
+
+                    <!-- Configuración Avanzada Opcional -->
+                    <div class="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800/80 space-y-4">
+                        <h4 class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 cursor-pointer select-none" onclick="toggleSeccionAvanzada()">
+                            <i data-lucide="chevron-right" id="iconAvanzado" class="w-4 h-4 text-brand-500 transition-transform duration-200"></i>
+                            Opciones Avanzadas de Ingeniería
+                        </h4>
+
+                        <div id="seccionAvanzada" class="hidden space-y-4 pt-2">
+                            <!-- Sección Avanzada para Préstamos -->
+                            <div id="avanzadoPrestamos" class="space-y-4">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5">Periodo de Gracia</label>
+                                    <select id="tipoGracia" onchange="realizarCalculos()" class="w-full bg-slate-50 dark:bg-slate-800 text-xs font-semibold px-3 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 outline-none transition cursor-pointer">
+                                        <option value="ninguno">Ninguno (Regular)</option>
+                                        <option value="parcial">Parcial (Paga solo Interés)</option>
+                                        <option value="total">Total (Capitalizable / No Paga)</option>
+                                    </select>
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Duración Gracia</label>
+                                        <input type="number" id="periodosGracia" value="0" min="0" onchange="realizarCalculos()" class="px-3 py-2 w-full border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg outline-none text-xs font-medium focus:ring-1 focus:ring-brand-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Abono Extra ($)</label>
+                                        <input type="number" id="abonoExtra" value="0" min="0" onchange="realizarCalculos()" class="px-3 py-2 w-full border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg outline-none text-xs font-medium focus:ring-1 focus:ring-brand-500">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Aplicar Abono en Periodo:</label>
+                                    <input type="number" id="periodoAbono" value="3" min="1" onchange="realizarCalculos()" class="px-3 py-2 w-full border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg outline-none text-xs font-medium focus:ring-1 focus:ring-brand-500">
+                                </div>
+                            </div>
+
+                            <!-- Sección Avanzada para Activos -->
+                            <div id="avanzadoActivos" class="space-y-4 hidden">
+                                <div>
+                                    <div class="flex justify-between text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                                        <span>Tasa Impuesto Corporativo</span>
+                                        <span id="taxRateValue" class="text-brand-500 font-extrabold">25%</span>
+                                    </div>
+                                    <input type="range" id="taxRateSlider" min="0" max="50" value="25" oninput="updateTaxRateLabel()" class="w-full">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botón Ejecutar -->
+                    <button onclick="realizarCalculos()" class="w-full mt-6 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white font-semibold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i> Procesar Simulación
+                    </button>
+                </div>
+
+                <!-- Bloque de Inteligencia Analítica -->
+                <div class="bg-gradient-to-br from-brand-900 to-indigo-950 text-white rounded-3xl p-6 shadow-xl border border-brand-800">
+                    <h3 class="font-bold text-sm mb-3 flex items-center gap-2 text-indigo-200">
+                        <i data-lucide="sparkles" class="w-4.5 h-4.5 text-amber-400"></i> Recomendación Analítica
+                    </h3>
+                    <p class="text-xs text-slate-300 leading-relaxed mb-4" id="aiRecomendacion">
+                        Defina los parámetros para que el sistema procese su perfil financiero estratégico...
+                    </p>
+                    <div class="flex items-center gap-2 bg-indigo-900/50 p-2.5 rounded-xl border border-indigo-700/30">
+                        <i data-lucide="shield-check" class="w-4.5 h-4.5 text-emerald-400 flex-shrink-0"></i>
+                        <span class="text-[10px] text-indigo-200">Simulación conforme con la norma fiscal internacional NIIF.</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard de Resultados y Visualización (Col 8) -->
+            <div class="lg:col-span-8 space-y-6">
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4" id="kpiGrid">
+                    <!-- Modificado dinámicamente por Javascript -->
+                </div>
+
+                <!-- Tabs de Resultados -->
+                <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-200/60 dark:border-slate-800 overflow-hidden">
+                    <div class="flex border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 px-4 pt-3 overflow-x-auto no-scrollbar gap-2">
+                        <button onclick="switchTab('tabGrafico')" id="btnTabGrafico" class="tab-transition px-4 py-2.5 text-xs font-extrabold uppercase tracking-wider border-b-2 border-brand-600 text-brand-600 dark:text-brand-400 focus:outline-none transition-all">
+                            Evolución Temporal
+                        </button>
+                        <button onclick="switchTab('tabTabla')" id="btnTabTabla" class="tab-transition px-4 py-2.5 text-xs font-extrabold uppercase tracking-wider border-b-2 border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 focus:outline-none transition-all">
+                            Tabla Detallada
+                        </button>
+                        <button onclick="switchTab('tabComparativa')" id="btnTabComparativa" class="tab-transition px-4 py-2.5 text-xs font-extrabold uppercase tracking-wider border-b-2 border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 focus:outline-none transition-all">
+                            Matriz Comparativa
+                        </button>
+                    </div>
+
+                    <!-- Contenido Pestaña 1: Gráficos -->
+                    <div id="tabGrafico" class="p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 class="text-md font-bold text-slate-900 dark:text-white" id="tituloGrafico">Curva de Balance de Amortización</h3>
+                                <p class="text-xs text-slate-400 dark:text-slate-500">Representación gráfica de saldos históricos</p>
+                            </div>
+                            <span class="text-[10px] bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-400 font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider">Interactivo</span>
+                        </div>
+                        <div class="relative h-[340px] md:h-[380px]">
+                            <canvas id="canvasChartPRO"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Contenido Pestaña 2: Tabla de Datos -->
+                    <div id="tabTabla" class="hidden">
+                        <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50/20 dark:bg-slate-900/20">
+                            <div>
+                                <h3 class="text-md font-bold text-slate-900 dark:text-white">Proyección de Saldos</h3>
+                                <p class="text-xs text-slate-400 dark:text-slate-500">Historial completo periodo a periodo</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="exportarCSV()" class="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-400 text-[11px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition">
+                                    <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i> Exportar CSV
+                                </button>
+                                <button onclick="window.print()" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">
+                                    <i data-lucide="printer" class="w-3.5 h-3.5"></i> Imprimir
+                                </button>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse" id="tablaProyeccion">
+                                <thead>
+                                    <tr class="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 text-[10px] font-extrabold uppercase tracking-wider border-b border-slate-200 dark:border-slate-800" id="tablaCabecera">
+                                        <!-- Cabecera de columnas dinámica -->
+                                    </tr>
+                                </thead>
+                                <tbody id="tablaCuerpo" class="text-xs divide-y divide-slate-100 dark:divide-slate-800/60 font-medium text-slate-700 dark:text-slate-300">
+                                    <!-- Inyección de filas -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Contenido Pestaña 3: Comparativa Multitasking -->
+                    <div id="tabComparativa" class="p-6 hidden">
+                        <div class="mb-5">
+                            <h3 class="text-md font-bold text-slate-900 dark:text-white">Matriz de Sensibilidad Comparativa</h3>
+                            <p class="text-xs text-slate-400 dark:text-slate-500">Comparación paralela simultánea de los tres métodos básicos</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="comparativaGrid">
+                            <!-- Inyección dinámica -->
+                        </div>
+
+                        <!-- Panel de Diferencias de Caja -->
+                        <div class="mt-6 bg-brand-50 dark:bg-slate-900/40 p-5 rounded-2xl border border-brand-200/50 dark:border-brand-850/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                            <div>
+                                <h4 class="text-xs font-extrabold uppercase tracking-wider text-brand-700 dark:text-brand-300 mb-1">Optimización de Flujo de Caja</h4>
+                                <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-w-lg" id="analisisDiferencialTxt">
+                                    Modifique los métodos del panel izquierdo para analizar la optimización de costes contables.
+                                </p>
+                            </div>
+                            <div class="text-right flex-shrink-0 bg-white dark:bg-slate-800 p-3.5 rounded-xl border border-brand-100 dark:border-slate-700 shadow-sm">
+                                <span class="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider block mb-0.5">Ahorro Máximo Teórico</span>
+                                <span class="text-md font-extrabold text-emerald-600 dark:text-emerald-400" id="ahorroMaximoValue">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-950 text-slate-400 py-8 mt-16 border-t border-slate-900">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4">
+            <div class="flex justify-center space-x-6 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                <span>Estándares NIIF / IFRS</span>
+                <span>•</span>
+                <span>Ingeniería Contable Avanzada</span>
+                <span>•</span>
+                <span>Simulador de Alta Precisión</span>
+            </div>
+            <p class="text-xs text-slate-600">© 2026 AmortiPRO. Todos los cálculos y modelos matemáticos están desarrollados y validados localmente para propósitos de análisis estratégico.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Inicialización de Iconos Vectorizados Lucide
+        lucide.createIcons();
+
+        // Estado del Aplicativo Master
+        let appState = {
+            naturaleza: 'prestamo', 
+            metodo: 'frances',      
+            datosCalculados: [],
+            chart: null,
+            activoTab: 'tabGrafico',
+            avanzadoAbierto: false,
+            esOscuro: false
+        };
+
+        // Definición de Métodos
+        const METODOS = {
+            prestamo: [
+                { id: 'frances', nombre: 'Sistema Francés (Cuota Fija)' },
+                { id: 'aleman', nombre: 'Sistema Alemán (Amortización Fija)' },
+                { id: 'americano', nombre: 'Sistema Americano (Bullet)' }
+            ],
+            activo: [
+                { id: 'lineal', nombre: 'Línea Recta (Uniforme NIIF)' },
+                { id: 'doble', nombre: 'Doble Saldo Decreciente (Acelerado)' },
+                { id: 'digitos', nombre: 'Suma de Dígitos de los Años' }
+            ]
+        };
+
+        // Presets Estratégicos Precalculados
+        const PRESETS = {
+            auto: {
+                naturaleza: 'prestamo',
+                metodo: 'frances',
+                monto: 40000,
+                interes: 7,
+                plazo: 5,
+                frecuencia: 1,
+                graciaTipo: 'ninguno',
+                graciaPeriodos: 0,
+                abono: 0,
+                periodoAbono: 1
+            },
+            hipoteca: {
+                naturaleza: 'prestamo',
+                metodo: 'aleman',
+                monto: 150000,
+                interes: 5.5,
+                plazo: 15,
+                frecuencia: 12,
+                graciaTipo: 'parcial',
+                graciaPeriodos: 12,
+                abono: 10000,
+                periodoAbono: 24
+            },
+            maquinaria: {
+                naturaleza: 'activo',
+                metodo: 'doble',
+                costo: 80000,
+                residual: 8000,
+                vida: 10,
+                tasaImpuesto: 30
+            }
+        };
+
+        // Formateador Monetario
+        const formatUSD = (val) => {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD'
+            }).format(val);
+        };
+
+        // Cambiar Tema (Light / Dark)
+        function toggleDarkMode() {
+            appState.esOscuro = !appState.esOscuro;
+            const html = document.documentElement;
+            const icon = document.getElementById('themeIcon');
+            
+            if (appState.esOscuro) {
+                html.classList.add('dark');
+                icon.setAttribute('data-lucide', 'sun');
+            } else {
+                html.classList.remove('dark');
+                icon.setAttribute('data-lucide', 'moon');
+            }
+            lucide.createIcons();
+            realizarCalculos(); 
+        }
+
+        // Cargar Parámetros del Preset Seleccionado
+        function cargarPreset(nombre) {
+            const data = PRESETS[nombre];
+            if (!data) return;
+
+            appState.naturaleza = data.naturaleza;
+            appState.metodo = data.metodo;
+
+            switchNaturaleza(data.naturaleza);
+            
+            setTimeout(() => {
+                if (data.naturaleza === 'prestamo') {
+                    document.getElementById('montoPrincipal').value = data.monto;
+                    document.getElementById('tasaInteres').value = data.interes;
+                    document.getElementById('plazoPeriodos').value = data.plazo;
+                    document.getElementById('frecuenciaPago').value = data.frecuencia;
+                    document.getElementById('tipoGracia').value = data.graciaTipo;
+                    document.getElementById('periodosGracia').value = data.graciaPeriodos;
+                    document.getElementById('abonoExtra').value = data.abono;
+                    document.getElementById('periodoAbono').value = data.periodoAbono;
+                } else {
+                    document.getElementById('montoActivo').value = data.costo;
+                    document.getElementById('valorResidual').value = data.residual;
+                    document.getElementById('vidaUtil').value = data.vida;
+                    document.getElementById('taxRateSlider').value = data.tasaImpuesto;
+                    updateTaxRateLabel();
+                }
+                document.getElementById('metodoSeleccionado').value = data.metodo;
+                realizarCalculos();
+            }, 60);
+        }
+
+        // Intercambio de Modo: Créditos vs Depreciación
+        function switchNaturaleza(nat) {
+            appState.naturaleza = nat;
+            appState.metodo = METODOS[nat][0].id;
+
+            const btnP = document.getElementById('btnSelectPrestamo');
+            const btnA = document.getElementById('btnSelectActivo');
+            const chkP = document.getElementById('checkPrestamo');
+            const chkA = document.getElementById('checkActivo');
+
+            const blockP = document.getElementById('avanzadoPrestamos');
+            const blockA = document.getElementById('avanzadoActivos');
+
+            if (nat === 'prestamo') {
+                btnP.className = "group relative text-left p-6 rounded-3xl border-2 transition-all duration-300 bg-white dark:bg-slate-900 hover:border-brand-500 border-brand-600 dark:border-brand-500 shadow-xl shadow-brand-500/5";
+                btnA.className = "group relative text-left p-6 rounded-3xl border-2 transition-all duration-300 bg-white dark:bg-slate-900 hover:border-amber-500 border-slate-200 dark:border-slate-800/80 hover:shadow-xl";
+                chkP.classList.remove('hidden');
+                chkA.classList.add('hidden');
+                blockP.classList.remove('hidden');
+                blockA.classList.add('hidden');
+            } else {
+                btnP.className = "group relative text-left p-6 rounded-3xl border-2 transition-all duration-300 bg-white dark:bg-slate-900 hover:border-brand-500 border-slate-200 dark:border-slate-800/80 hover:shadow-xl";
+                btnA.className = "group relative text-left p-6 rounded-3xl border-2 transition-all duration-300 bg-white dark:bg-slate-900 hover:border-amber-500 border-amber-600 dark:border-amber-500 shadow-xl shadow-amber-500/5";
+                chkP.classList.add('hidden');
+                chkA.classList.remove('hidden');
+                blockP.classList.add('hidden');
+                blockA.classList.remove('hidden');
+            }
+
+            actualizarSelectMetodo();
+            reconstruirInputs();
+            realizarCalculos();
+        }
+
+        function actualizarSelectMetodo() {
+            const select = document.getElementById('metodoSeleccionado');
+            select.innerHTML = '';
+            
+            METODOS[appState.naturaleza].forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m.id;
+                opt.innerText = m.nombre;
+                select.appendChild(opt);
+            });
+            select.value = appState.metodo;
+        }
+
+        function actualizarMetodoExplicativo() {
+            appState.metodo = document.getElementById('metodoSeleccionado').value;
+            realizarCalculos();
+        }
+
+        function reconstruirInputs() {
+            const container = document.getElementById('inputContainer');
+            container.innerHTML = '';
+
+            if (appState.naturaleza === 'prestamo') {
+                container.innerHTML = `
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5">Capital Principal ($)</label>
+                        <input type="number" id="montoPrincipal" value="40000" min="1" onchange="realizarCalculos()" class="px-4 py-2.5 w-full border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-xl outline-none text-sm font-semibold transition focus:ring-2 focus:ring-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5">Tasa Interés Anual (TNA %)</label>
+                        <input type="number" id="tasaInteres" value="7" step="0.1" min="0" onchange="realizarCalculos()" class="px-4 py-2.5 w-full border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-xl outline-none text-sm font-semibold transition focus:ring-2 focus:ring-brand-500">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5">Plazo (Años)</label>
+                            <input type="number" id="plazoPeriodos" value="5" min="1" max="50" onchange="realizarCalculos()" class="px-4 py-2.5 w-full border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-xl outline-none text-sm font-semibold transition focus:ring-2 focus:ring-brand-500">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5">Frecuencia Pago</label>
+                            <select id="frecuenciaPago" onchange="realizarCalculos()" class="px-4 py-2.5 w-full border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-xl outline-none text-sm font-semibold transition focus:ring-2 focus:ring-brand-500 bg-white dark:bg-slate-800 cursor-pointer">
+                                <option value="1">Anual</option>
+                                <option value="12" selected>Mensual</option>
+                            </select>
+                        </div>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5">Costo de Adquisición ($)</label>
+                        <input type="number" id="montoActivo" value="40000" min="1" onchange="realizarCalculos()" class="px-4 py-2.5 w-full border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-xl outline-none text-sm font-semibold transition focus:ring-2 focus:ring-brand-500">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5">Residual ($)</label>
+                            <input type="number" id="valorResidual" value="0" min="0" onchange="realizarCalculos()" class="px-4 py-2.5 w-full border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-xl outline-none text-sm font-semibold transition focus:ring-2 focus:ring-brand-500">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5">Vida Útil (Años)</label>
+                            <input type="number" id="vidaUtil" value="5" min="1" max="40" onchange="realizarCalculos()" class="px-4 py-2.5 w-full border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-xl outline-none text-sm font-semibold transition focus:ring-2 focus:ring-brand-500">
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function toggleSeccionAvanzada() {
+            appState.avanzadoAbierto = !appState.avanzadoAbierto;
+            const block = document.getElementById('seccionAvanzada');
+            const icon = document.getElementById('iconAvanzado');
+            if (appState.avanzadoAbierto) {
+                block.classList.remove('hidden');
+                icon.classList.add('rotate-90');
+            } else {
+                block.classList.add('hidden');
+                icon.classList.remove('rotate-90');
+            }
+        }
+
+        function updateTaxRateLabel() {
+            const val = document.getElementById('taxRateSlider').value;
+            document.getElementById('taxRateValue').innerText = `${val}%`;
+            realizarCalculos();
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toastContainer');
+            document.getElementById('toastMessage').innerText = msg;
+            toast.classList.remove('hidden');
+            setTimeout(() => { hideToast(); }, 5000);
+        }
+
+        function hideToast() {
+            document.getElementById('toastContainer').classList.add('hidden');
+        }
+
+        function realizarCalculos() {
+            if (appState.naturaleza === 'prestamo') {
+                procesarPrestamoMaster();
+            } else {
+                procesarActivoMaster();
+            }
+        }
+
+        function calcularPrestamoGenerico(metodo, params) {
+            const { principal, tasaAnual, totalPeriodos, frecuencia, graciaTipo, graciaPeriodos, abonoExtra, periodoAbono } = params;
+            const tasaPeriodica = (tasaAnual / 100) / frecuencia;
+
+            let saldoDeuda = principal;
+            let totalInteres = 0;
+            let datos = [];
+
+            for (let i = 1; i <= totalPeriodos; i++) {
+                let amortizacion = 0;
+                let interes = 0;
+                let cuota = 0;
+                const saldoInicial = saldoDeuda;
+
+                if (i <= graciaPeriodos && graciaTipo !== 'ninguno') {
+                    if (graciaTipo === 'parcial') {
+                        interes = saldoInicial * tasaPeriodica;
+                        amortizacion = 0;
+                        cuota = interes;
+                    } else if (graciaTipo === 'total') {
+                        interes = saldoInicial * tasaPeriodica;
+                        amortizacion = 0;
+                        cuota = 0;
+                        saldoDeuda += interes; 
+                    }
+                } else {
+                    const periodosRestantes = totalPeriodos - Math.min(i - 1, graciaPeriodos);
+                    
+                    if (metodo === 'frances') {
+                        if (tasaPeriodica > 0) {
+                            cuota = saldoInicial * (tasaPeriodica * Math.pow(1 + tasaPeriodica, periodosRestantes)) / (Math.pow(1 + tasaPeriodica, periodosRestantes) - 1);
+                        } else {
+                            cuota = saldoInicial / periodosRestantes;
+                        }
+                        interes = saldoInicial * tasaPeriodica;
+                        amortizacion = cuota - interes;
+                    } 
+                    else if (metodo === 'aleman') {
+                        amortizacion = saldoInicial / periodosRestantes;
+                        interes = saldoInicial * tasaPeriodica;
+                        cuota = amortizacion + interes;
+                    } 
+                    else if (metodo === 'americano') {
+                        interes = saldoInicial * tasaPeriodica;
+                        amortizacion = (i === totalPeriodos) ? saldoInicial : 0;
+                        cuota = interes + amortizacion;
+                    }
+                }
+
+                if (i === parseInt(periodoAbono) && abonoExtra > 0) {
+                    const abonoAplicado = Math.min(abonoExtra, saldoDeuda);
+                    amortizacion += abonoAplicado;
+                    cuota += abonoAplicado;
+                }
+
+                if (i > graciaPeriodos || graciaTipo !== 'total') {
+                    saldoDeuda -= amortizacion;
+                }
+                
+                if (saldoDeuda < 0.01) {
+                    saldoDeuda = 0;
+                }
+
+                interes = Math.max(interes, 0);
+                totalInteres += interes;
+
+                datos.push({
+                    periodo: i,
+                    inicial: saldoInicial,
+                    cuota: cuota,
+                    interes: interes,
+                    amortizacion: amortizacion,
+                    final: saldoDeuda
+                });
+
+                if (saldoDeuda <= 0) break; 
+            }
+
+            return { datos, totalInteres };
+        }
+
+        function procesarPrestamoMaster() {
+            const principal = parseFloat(document.getElementById('montoPrincipal').value) || 0;
+            const tasaAnual = parseFloat(document.getElementById('tasaInteres').value) || 0;
+            const plazoAnios = parseInt(document.getElementById('plazoPeriodos').value) || 1;
+            const frecuencia = parseInt(document.getElementById('frecuenciaPago').value) || 12;
+
+            const graciaTipo = document.getElementById('tipoGracia').value;
+            const graciaPeriodos = parseInt(document.getElementById('periodosGracia').value) || 0;
+            const abonoExtra = parseFloat(document.getElementById('abonoExtra').value) || 0;
+            const periodoAbono = parseInt(document.getElementById('periodoAbono').value) || 1;
+
+            if (principal <= 0 || plazoAnios <= 0) {
+                showToast("Por favor asigne un capital de crédito y plazo mayores a cero.");
+                return;
+            }
+
+            const totalPeriodos = plazoAnios * frecuencia;
+            const params = { principal, tasaAnual, totalPeriodos, frecuencia, graciaTipo, graciaPeriodos, abonoExtra, periodoAbono };
+            
+            const { datos, totalInteres } = calcularPrestamoGenerico(appState.metodo, params);
+            appState.datosCalculados = datos;
+
+            inyectarKPIsPrestamos(principal, totalInteres, datos);
+            generarTablaPrestamo(datos, frecuencia);
+            dibujarGrafico(datos, 'Prestamo', principal);
+            generarComparativaCompletaPrestamos(params);
+        }
+
+        function calcularActivoGenerico(metodo, params) {
+            const { costo, residual, vida, taxRate } = params;
+            let saldoLibros = costo;
+            let depreciacionAcumulada = 0;
+            let datos = [];
+
+            if (metodo === 'lineal') {
+                const depreciacionAnual = (costo - residual) / vida;
+                for (let i = 1; i <= vida; i++) {
+                    const inicial = saldoLibros;
+                    saldoLibros -= depreciacionAnual;
+                    depreciacionAcumulada += depreciacionAnual;
+
+                    datos.push({
+                        periodo: i,
+                        inicial: inicial,
+                        tasa: `${(100 / vida).toFixed(1)}%`,
+                        amortizacion: depreciacionAnual,
+                        acumulado: depreciacionAcumulada,
+                        final: Math.max(saldoLibros, residual)
+                    });
+                }
+            }
+            else if (metodo === 'doble') {
+                const tasaLineal = 1 / vida;
+                const tasaDoble = tasaLineal * 2.0; 
+
+                for (let i = 1; i <= vida; i++) {
+                    const inicial = saldoLibros;
+                    let depr = inicial * tasaDoble;
+
+                    if (i === vida || (inicial - depr) < residual) {
+                        depr = inicial - residual;
+                    }
+
+                    saldoLibros -= depr;
+                    depreciacionAcumulada += depr;
+
+                    datos.push({
+                        periodo: i,
+                        inicial: inicial,
+                        tasa: `${(tasaDoble * 100).toFixed(1)}%`,
+                        amortizacion: depr,
+                        acumulado: depreciacionAcumulada,
+                        final: Math.max(saldoLibros, residual)
+                    });
+                }
+            }
+            else if (metodo === 'digitos') {
+                const sumaDigitos = (vida * (vida + 1)) / 2;
+                const baseDepreciable = costo - residual;
+
+                for (let i = 1; i <= vida; i++) {
+                    const inicial = saldoLibros;
+                    const pesoAnio = vida - i + 1;
+                    const fraccion = pesoAnio / sumaDigitos;
+                    const depr = baseDepreciable * fraccion;
+
+                    saldoLibros -= depr;
+                    depreciacionAcumulada += depr;
+
+                    datos.push({
+                        periodo: i,
+                        inicial: inicial,
+                        tasa: `${(fraccion * 100).toFixed(1)}%`,
+                        amortizacion: depr,
+                        acumulado: depreciacionAcumulada,
+                        final: Math.max(saldoLibros, residual)
+                    });
+                }
+            }
+
+            return { datos, depreciacionAcumulada };
+        }
+
+        function procesarActivoMaster() {
+            const costo = parseFloat(document.getElementById('montoActivo').value) || 0;
+            const residual = parseFloat(document.getElementById('valorResidual').value) || 0;
+            const vida = parseInt(document.getElementById('vidaUtil').value) || 1;
+            const taxRate = parseFloat(document.getElementById('taxRateSlider').value) || 0;
+
+            if (costo <= 0 || vida <= 0 || residual > costo) {
+                showToast("El costo de adquisición debe superar al valor residual y la vida útil ser positiva.");
+                return;
+            }
+
+            const params = { costo, residual, vida, taxRate };
+            const { datos, depreciacionAcumulada } = calcularActivoGenerico(appState.metodo, params);
+            appState.datosCalculados = datos;
+
+            inyectarKPIsActivos(costo, residual, depreciacionAcumulada, taxRate);
+            generarTablaActivo(datos);
+            dibujarGrafico(datos, 'Activo', costo);
+            generarComparativaCompletaActivos(params);
+        }
+
+        function inyectarKPIsPrestamos(principal, totalInteres, datos) {
+            const container = document.getElementById('kpiGrid');
+            const primeraCuota = datos[0] ? datos[0].cuota : 0;
+            const ultimaCuota = datos[datos.length - 1] ? datos[datos.length - 1].cuota : 0;
+
+            container.innerHTML = `
+                <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800/80 shadow-sm">
+                    <span class="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-1">Monto Original</span>
+                    <p class="text-md font-extrabold text-slate-900 dark:text-white">${formatUSD(principal)}</p>
+                    <span class="text-[9px] text-brand-500 font-bold">Principal Recibido</span>
+                </div>
+                <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800/80 shadow-sm">
+                    <span class="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-1">Costo Financiero</span>
+                    <p class="text-md font-extrabold text-indigo-600 dark:text-indigo-400">${formatUSD(totalInteres)}</p>
+                    <span class="text-[9px] text-slate-400 dark:text-slate-500">Cargos por intereses</span>
+                </div>
+                <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800/80 shadow-sm">
+                    <span class="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-1">Servicio de Deuda</span>
+                    <p class="text-md font-extrabold text-slate-900 dark:text-white">${formatUSD(principal + totalInteres)}</p>
+                    <span class="text-[9px] text-emerald-500 font-bold">+${((totalInteres/principal)*100).toFixed(1)}% Cargado Real</span>
+                </div>
+                <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800/80 shadow-sm">
+                    <span class="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-1">Primera / Última</span>
+                    <p class="text-sm font-extrabold text-emerald-600 dark:text-emerald-400">${formatUSD(primeraCuota)}</p>
+                    <span class="text-[9px] text-slate-400 dark:text-slate-500">Finaliza en ${formatUSD(ultimaCuota)}</span>
+                </div>
+            `;
+        }
+
+        function inyectarKPIsActivos(costo, residual, totalAmort, taxRate) {
+            const container = document.getElementById('kpiGrid');
+            const escudoFiscal = totalAmort * (taxRate / 100);
+
+            container.innerHTML = `
+                <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800/80 shadow-sm">
+                    <span class="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-1">Valor Histórico</span>
+                    <p class="text-md font-extrabold text-slate-900 dark:text-white">${formatUSD(costo)}</p>
+                    <span class="text-[9px] text-slate-400 dark:text-slate-500 font-semibold">Valor inicial en libros</span>
+                </div>
+                <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800/80 shadow-sm">
+                    <span class="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-1">Depreciado</span>
+                    <p class="text-md font-extrabold text-amberbrand-600">${formatUSD(totalAmort)}</p>
+                    <span class="text-[9px] text-slate-400 dark:text-slate-500">Desgaste total calculado</span>
+                </div>
+                <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800/80 shadow-sm">
+                    <span class="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-1">Salvamento</span>
+                    <p class="text-md font-extrabold text-slate-900 dark:text-white">${formatUSD(residual)}</p>
+                    <span class="text-[9px] text-amber-500 font-semibold">Valor residual pactado</span>
+                </div>
+                <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800/80 shadow-sm">
+                    <span class="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-1">Escudo Fiscal</span>
+                    <p class="text-md font-extrabold text-brand-600 dark:text-brand-400">${formatUSD(escudoFiscal)}</p>
+                    <span class="text-[9px] text-emerald-500 font-bold">Ahorro tributario estimado</span>
+                </div>
+            `;
+        }
+
+        function generarTablaPrestamo(datos, frecuencia) {
+            const cabecera = document.getElementById('tablaCabecera');
+            const cuerpo = document.getElementById('tablaCuerpo');
+            const periodoTxt = frecuencia === 12 ? 'Mes' : 'Año';
+
+            cabecera.innerHTML = `
+                <th class="py-4 px-6">Periodo (${periodoTxt})</th>
+                <th class="py-4 px-6">Balance Inicial</th>
+                <th class="py-4 px-6 text-emerald-600 dark:text-emerald-400">Amortización Principal</th>
+                <th class="py-4 px-6">Interés Periodo</th>
+                <th class="py-4 px-6 text-brand-600 dark:text-brand-400 font-bold">Cuota Total</th>
+                <th class="py-4 px-6">Balance Insoluto Final</th>
+            `;
+
+            cuerpo.innerHTML = '';
+            datos.forEach(d => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-100/50 dark:hover:bg-slate-800/30 transition duration-150";
+                tr.innerHTML = `
+                    <td class="py-3.5 px-6 font-extrabold text-slate-900 dark:text-white">${d.periodo}</td>
+                    <td class="py-3.5 px-6 font-medium text-slate-500 dark:text-slate-400">${formatUSD(d.inicial)}</td>
+                    <td class="py-3.5 px-6 font-bold text-emerald-600">${formatUSD(d.amortizacion)}</td>
+                    <td class="py-3.5 px-6 font-medium text-slate-500 dark:text-slate-400">${formatUSD(d.interes)}</td>
+                    <td class="py-3.5 px-6 font-extrabold text-brand-600 dark:text-brand-400">${formatUSD(d.cuota)}</td>
+                    <td class="py-3.5 px-6 font-bold text-slate-800 dark:text-slate-200">${formatUSD(d.final)}</td>
+                `;
+                cuerpo.appendChild(tr);
+            });
+        }
+
+        function generarTablaActivo(datos) {
+            const cabecera = document.getElementById('tablaCabecera');
+            const cuerpo = document.getElementById('tablaCuerpo');
+
+            cabecera.innerHTML = `
+                <th class="py-4 px-6">Año</th>
+                <th class="py-4 px-6">Valor Contable Inicial</th>
+                <th class="py-4 px-6">Tasa Coeficiente</th>
+                <th class="py-4 px-6 text-amberbrand-600 font-bold">Gasto Depreciación</th>
+                <th class="py-4 px-6">Depreciación Acumulada</th>
+                <th class="py-4 px-6">Valor Neto en Libros Final</th>
+            `;
+
+            cuerpo.innerHTML = '';
+            datos.forEach(d => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-100/50 dark:hover:bg-slate-800/30 transition duration-150";
+                tr.innerHTML = `
+                    <td class="py-3.5 px-6 font-extrabold text-slate-900 dark:text-white">${d.periodo}</td>
+                    <td class="py-3.5 px-6 font-medium text-slate-500 dark:text-slate-400">${formatUSD(d.inicial)}</td>
+                    <td class="py-3.5 px-6 font-bold text-slate-400 dark:text-slate-500">${d.tasa}</td>
+                    <td class="py-3.5 px-6 font-extrabold text-amber-600 dark:text-amber-500">${formatUSD(d.amortizacion)}</td>
+                    <td class="py-3.5 px-6 font-medium text-slate-500 dark:text-slate-400">${formatUSD(d.acumulado)}</td>
+                    <td class="py-3.5 px-6 font-bold text-slate-800 dark:text-slate-200">${formatUSD(d.final)}</td>
+                `;
+                cuerpo.appendChild(tr);
+            });
+        }
+
+        function generarComparativaCompletaPrestamos(params) {
+            const grid = document.getElementById('comparativaGrid');
+            grid.innerHTML = '';
+
+            const metodosComp = [
+                { id: 'frances', nombre: 'S. Francés (Cuota Fija)' },
+                { id: 'aleman', nombre: 'S. Alemán (Amort. Fija)' },
+                { id: 'americano', nombre: 'S. Americano (Bullet)' }
+            ];
+
+            let menorCostoInteres = Infinity;
+            let metodoMasEficiente = '';
+
+            metodosComp.forEach(m => {
+                const res = calcularPrestamoGenerico(m.id, params);
+                const costoTotal = params.principal + res.totalInteres;
+
+                if (res.totalInteres < menorCostoInteres) {
+                    menorCostoInteres = res.totalInteres;
+                    metodoMasEficiente = m.nombre;
+                }
+
+                const card = document.createElement('div');
+                const esActivo = appState.metodo === m.id;
+                card.className = `p-5 rounded-2xl border transition-all ${esActivo ? 'bg-brand-50/50 dark:bg-brand-950/20 border-brand-500' : 'bg-slate-50/50 dark:bg-slate-900 border-slate-200 dark:border-slate-800/80'}`;
+                
+                card.innerHTML = `
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-extrabold uppercase text-slate-500 dark:text-slate-400">${m.nombre}</span>
+                        ${esActivo ? '<span class="text-[9px] bg-brand-100 text-brand-700 px-2 py-0.5 rounded-full font-bold">Activo</span>' : ''}
+                    </div>
+                    <div class="space-y-2 text-xs">
+                        <div class="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+                            <span class="text-slate-500">Total Intereses:</span>
+                            <span class="font-bold text-slate-900 dark:text-white">${formatUSD(res.totalInteres)}</span>
+                        </div>
+                        <div class="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+                            <span class="text-slate-500">Costo Financiero:</span>
+                            <span class="font-bold text-slate-900 dark:text-white">${formatUSD(costoTotal)}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Primera Cuota:</span>
+                            <span class="font-semibold text-emerald-600 dark:text-emerald-400">${res.datos[0] ? formatUSD(res.datos[0].cuota) : '--'}</span>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+
+            const diferencia = (params.principal * (params.tasaAnual/100) * params.totalPeriodos/params.frecuencia) - menorCostoInteres;
+            document.getElementById('ahorroMaximoValue').innerText = formatUSD(Math.abs(diferencia));
+            
+            let recomendacionTxt = "";
+            let analisisDiferencial = "";
+
+            if (appState.metodo === 'frances') {
+                recomendacionTxt = `Su esquema actual **(Sistema Francés)** ofrece una planificación de tesorería óptima con cuotas predecibles y fijas, ideal para empresas con flujos de caja operativos estables.`;
+                analisisDiferencial = `El **${metodoMasEficiente}** representa el esquema financieramente más óptimo para ahorrar intereses. Sin embargo, requiere una mayor disponibilidad de efectivo al inicio de la amortización.`;
+            } else if (appState.metodo === 'aleman') {
+                recomendacionTxt = `El **Sistema Alemán** de amortización constante es el más recomendado si su objetivo es disminuir rápidamente su nivel de endeudamiento financiero contable (Apalancamiento).`;
+                analisisDiferencial = `Usted ha seleccionado el sistema de mayor optimización de costes. Su ahorro comparativo estimado contra el sistema alternativo más costoso es de aproximadamente **${formatUSD(Math.abs(diferencia))}**.`;
+            } else {
+                recomendacionTxt = `El **Sistema Americano** es un modelo táctico agresivo. Se utiliza comúnmente en la financiación de proyectos puente (Bridge Loans) donde se prevé un ingreso masivo de capital en el año final.`;
+                analisisDiferencial = `Tenga precaución con este método: el pago de una sola cuota del 100% al vencimiento final requiere la creación de un fondo de amortización reservado.`;
+            }
+
+            document.getElementById('aiRecomendacion').innerHTML = recomendacionTxt;
+            document.getElementById('analisisDiferencialTxt').innerText = analisisDiferencial;
+        }
+
+        function generarComparativaCompletaActivos(params) {
+            const grid = document.getElementById('comparativaGrid');
+            grid.innerHTML = '';
+
+            const metodosComp = [
+                { id: 'lineal', nombre: 'Línea Recta (Uniforme)' },
+                { id: 'doble', nombre: 'Doble Saldo Decreciente' },
+                { id: 'digitos', nombre: 'Suma de Dígitos' }
+            ];
+
+            let mayorDeprAnio1 = 0;
+            let metodoMasRapido = '';
+
+            metodosComp.forEach(m => {
+                const res = calcularActivoGenerico(m.id, params);
+                const deprAnio1 = res.datos[0] ? res.datos[0].amortizacion : 0;
+
+                if (deprAnio1 > mayorDeprAnio1) {
+                    mayorDeprAnio1 = deprAnio1;
+                    metodoMasRapido = m.nombre;
+                }
+
+                const card = document.createElement('div');
+                const esActivo = appState.metodo === m.id;
+                card.className = `p-5 rounded-2xl border transition-all ${esActivo ? 'bg-brand-50/50 dark:bg-brand-950/20 border-brand-500' : 'bg-slate-50/50 dark:bg-slate-900 border-slate-200 dark:border-slate-800/80'}`;
+                
+                card.innerHTML = `
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-extrabold uppercase text-slate-500 dark:text-slate-400">${m.nombre}</span>
+                        ${esActivo ? '<span class="text-[9px] bg-brand-100 text-brand-700 px-2 py-0.5 rounded-full font-bold">Activo</span>' : ''}
+                    </div>
+                    <div class="space-y-2 text-xs">
+                        <div class="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+                            <span class="text-slate-500">Depr. Año 1:</span>
+                            <span class="font-bold text-slate-900 dark:text-white">${formatUSD(deprAnio1)}</span>
+                        </div>
+                        <div class="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+                            <span class="text-slate-500">Valor Neto Final:</span>
+                            <span class="font-bold text-slate-900 dark:text-white">${formatUSD(res.datos[res.datos.length - 1] ? res.datos[res.datos.length - 1].final : 0)}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Escudo Fiscal Año 1:</span>
+                            <span class="font-semibold text-emerald-600 dark:text-emerald-400">${formatUSD(deprAnio1 * (params.taxRate / 100))}</span>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+
+            const diffAhorroTrib = (mayorDeprAnio1 - (appState.datosCalculados[0] ? appState.datosCalculados[0].amortizacion : 0)) * (params.taxRate / 100);
+            document.getElementById('ahorroMaximoValue').innerText = formatUSD(Math.abs(diffAhorroTrib));
+
+            let recomendacionTxt = "";
+            let analisisDiferencial = "";
+
+            if (appState.metodo === 'lineal') {
+                recomendacionTxt = `La **Depreciación en Línea Recta** es el estándar internacional por defecto bajo normas NIIF/IFRS. Distribuye el desgaste de forma uniforme, simplificando los estados contables.`;
+                analisisDiferencial = `Si requiere un mayor flujo de efectivo inmediato, el método acelerado de **${metodoMasRapido}** le otorgaría un escudo fiscal superior de **${formatUSD(diffAhorroTrib)}** adicionales solo en su primer ejercicio fiscal corporativo.`;
+            } else if (appState.metodo === 'doble') {
+                recomendacionTxt = `El método de **Doble Saldo Decreciente** maximiza las pérdidas fiscales artificiales en los primeros ejercicios del activo. Altamente recomendado para vehículos, flotillas y tecnología sujeta a obsolescencia.`;
+                analisisDiferencial = `Usted ha seleccionado el método fiscalmente más agresivo de amortización acelerada, capturando el mayor escudo fiscal inicial posible.`;
+            } else {
+                recomendacionTxt = `La **Suma de Dígitos de los Años** es una opción óptima e intermedia que permite amortizar de forma acelerada sin el desgaste agresivo de la tasa del doble saldo.`;
+                analisisDiferencial = `Este modelo equilibra la depreciación impositiva con la devaluación real esperada de maquinarias de producción a mediano plazo.`;
+            }
+
+            document.getElementById('aiRecomendacion').innerHTML = recomendacionTxt;
+            document.getElementById('analisisDiferencialTxt').innerText = analisisDiferencial;
+        }
+
+        function dibujarGrafico(datos, tipo, valorMax) {
+            const labels = ['Inicial', ...datos.map(d => `${d.periodo}`)];
+            
+            let balances = [];
+            let amortizaciones = [];
+
+            if (tipo === 'Prestamo') {
+                balances = [valorMax, ...datos.map(d => d.final)];
+                amortizaciones = [0, ...datos.map(d => d.amortizacion)];
+            } else {
+                balances = [valorMax, ...datos.map(d => d.final)];
+                amortizaciones = [0, ...datos.map(d => d.acumulado)];
+            }
+
+            if (appState.chart) {
+                appState.chart.destroy();
+            }
+
+            const ctx = document.getElementById('canvasChartPRO').getContext('2d');
+            const isActivo = (tipo === 'Activo');
+            
+            const primaryColor = isActivo ? '#d97706' : '#4f46e5';
+            const accentColor = '#10b981';
+            const gridColor = appState.esOscuro ? '#334155' : '#f1f5f9';
+            const fontColor = appState.esOscuro ? '#94a3b8' : '#64748b';
+
+            appState.chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: isActivo ? 'Valor Contable Remanente ($)' : 'Deuda Pendiente ($)',
+                            data: balances,
+                            borderColor: primaryColor,
+                            backgroundColor: isActivo ? 'rgba(217, 119, 6, 0.05)' : 'rgba(79, 70, 229, 0.05)',
+                            fill: true,
+                            tension: 0.15,
+                            borderWidth: 3,
+                            pointBackgroundColor: primaryColor,
+                            pointRadius: 4
+                        },
+                        {
+                            label: isActivo ? 'Depreciación Acumulada ($)' : 'Amortización de Capital ($)',
+                            data: amortizaciones,
+                            borderColor: accentColor,
+                            backgroundColor: 'transparent',
+                            fill: false,
+                            borderDash: [5, 5],
+                            tension: 0.1,
+                            borderWidth: 2,
+                            pointBackgroundColor: accentColor,
+                            pointRadius: 3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                color: fontColor,
+                                font: {
+                                    family: 'Plus Jakarta Sans',
+                                    size: 11,
+                                    weight: 600
+                                },
+                                boxWidth: 12
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            grid: {
+                                color: gridColor
+                            },
+                            ticks: {
+                                color: fontColor,
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                color: fontColor
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Navegación de Pestañas
+        function switchTab(tabId) {
+            appState.activoTab = tabId;
+
+            document.getElementById('tabGrafico').classList.add('hidden');
+            document.getElementById('tabTabla').classList.add('hidden');
+            document.getElementById('tabComparativa').classList.add('hidden');
+
+            document.getElementById(tabId).classList.remove('hidden');
+
+            const tabs = ['btnTabGrafico', 'btnTabTabla', 'btnTabComparativa'];
+            tabs.forEach(t => {
+                const btn = document.getElementById(t);
+                btn.className = "tab-transition px-4 py-2.5 text-xs font-bold uppercase tracking-wider border-b-2 border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-800 dark:hover:text-white";
+            });
+
+            const activeBtn = document.getElementById('btn' + tabId.charAt(0).toUpperCase() + tabId.slice(1));
+            activeBtn.className = "tab-transition px-4 py-2.5 text-xs font-bold uppercase tracking-wider border-b-2 border-brand-600 text-brand-600 dark:text-brand-400";
+        }
+
+        function exportarCSV() {
+            let csvContent = "data:text/csv;charset=utf-8,";
+            
+            if (appState.naturaleza === 'prestamo') {
+                csvContent += "Periodo,Balance Inicial,Amortizacion de Capital,Interes Cobrado,Cuota Total,Balance Final\n";
+                appState.datosCalculados.forEach(d => {
+                    csvContent += `${d.periodo},${d.inicial.toFixed(2)},${d.amortizacion.toFixed(2)},${d.interes.toFixed(2)},${d.cuota.toFixed(2)},${d.final.toFixed(2)}\n`;
+                });
+            } else {
+                csvContent += "Periodo,Valor Inicial,Tasa,Amortizacion Anual,Acumulado,Valor Final Neto\n";
+                appState.datosCalculados.forEach(d => {
+                    csvContent += `${d.periodo},${d.inicial.toFixed(2)},${d.tasa},${d.amortizacion.toFixed(2)},${d.acumulado.toFixed(2)},${d.final.toFixed(2)}\n`;
+                });
+            }
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `AmortiPRO_Analytics_${appState.metodo}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Ejecución de Ciclo Inicial al Cargar la Ventana
+        window.onload = function () {
+            reconstruirInputs();
+            actualizarSelectMetodo();
+            realizarCalculos();
+        }
+    </script>
+</body>
+</html>
